@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.17/esri/themes/dark-blue/main.css">
+    <link rel="stylesheet" href="main.css">
+    <script src="main.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>  
+    <script src="https://js.arcgis.com/4.17/"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBod1ktWRwbQ_PYtErbsHDXnqu8sAl55Jo" async defer></script>
+    <title>3D Global App</title>
+</head>
+<body>
+    <div id="map">
+    </div>
+    <div id="container">
+        <div id="sceneContainer"></div>
+    </div>
+    <script>
+        $('#map').hide();
+        function currentLL(){
+
+        }
+        //global map APP   
+            function glo(lat,lot,zoom){
+                const ga = require([
+            "esri/Map",
+            "esri/views/SceneView",
+            //"esri/widgets/Zoom",
+            "esri/widgets/CoordinateConversion",
+            "esri/geometry/Point",
+            "dojo/domReady!" // will not be called until DOM is ready
+            ], function (
+            Map,
+            SceneView,
+            CoordinateConversion,
+            Point
+            //Zoom
+            ) { 
+                    const map = new Map({
+                        basemap: 'satellite'
+                    });
+
+                    const view = new SceneView({
+                        map: map,
+                        zoom: zoom,
+                        center: [lat, lot],
+                        container: "sceneContainer",
+                        environment: {
+                            atmosphereEnabled: false,
+                            background: {
+                            type: "color",
+                            color: [0,10,16]
+                            }
+                        },
+                        // ui: {
+                        //     //components: ["zoom"],
+                        //     ccWidget: ["bottom-left"]
+                        // }
+                    });
+
+                    const ccWidget = new CoordinateConversion({
+                        view: view
+                    });
+
+                    view.ui.add(ccWidget, "bottom-left");
+
+                    view.watch('zoom', zoomChange);
+
+                    view.on("double-click", function(event){
+                        event.stopPropagation();
+                        });
+
+                    view.on("double-click", function(event){
+                        // event is the event handle returned after the event fires.
+                        // view.toMap({position:{x: event.lat, y: event.log}});
+                        var lat = event.mapPoint.latitude;
+                        var lon = event.mapPoint.longitude;
+
+                        const point = new Point({
+                                        x:lon,
+                                        y:lat,
+
+                                    });
+                    
+                        view.goTo({
+                            center:point,
+                            zoom:18
+                        });
+                          
+                        console.log(event.mapPoint);
+                        });
+
+
+                    // document.getElementById("recenter").addEventListener("click", () => {
+                    //     view
+                    //         .goTo(
+                    //             {
+                    //                 position:{
+                    //                     x: 151,
+                    //                     y: 34,
+                    //                     z: 16,
+                    //                 }
+                    //             }
+                    //         )
+                    // });
+
+                    var pointLayer = new FeatureLayer("https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Landscape_Trees/FeatureServer/0");
+
+                    // map.addLayer(pointLayer);
+                    
+                    // pointLayer.on("click", function (event) {
+                    // map.centerAndZoom(new Point(event.graphic.geometry),8);
+                    // });
+
+            });
+            }
+            glo(141,50,2);
+
+
+            //hide global map app when level > 13
+            function zoomChange(newValue, oldValue, property, object){
+                    console.log("New value: ", newValue,
+                        "<br>Old value: ", oldValue,
+                        "<br>Watched property: ", property,
+                        "<br>Watched object: ", object);
+                        var gloLat = object.center.latitude;
+                        var gloLot = object.center.longitude;
+                        //var gloZom = object.getZoom;
+                        if(newValue > 12){
+                            $('#sceneContainer').remove();
+                            //GOOGLE MAP API
+                                let map;
+                                map = new google.maps.Map( document.getElementById( 'map' ), {
+                                    mapTypeId:'satellite',
+                                    center: {
+                                        lat: gloLat,
+                                        lng: gloLot
+                                    },
+                                    zoom: 12,
+                                });
+                                const trafficLayer = new google.maps.TrafficLayer();
+                                trafficLayer.setMap(map);
+                                //
+                                $('#map').show();
+                                //addListener hide google map when level <= 7
+                                google.maps.event.addListener(map, 'zoom_changed', function() {
+                                    
+                                    zoomLevel = map.getZoom();
+                                    console.log(zoomLevel);
+                                    if(zoomLevel <=7){
+                                        $('#map').hide();
+                                        //手动添加被删除的html tag 
+                                        $('#container').append('<div id="sceneContainer"></div>');
+                                        //从新运行 global map app
+                                        glo(object.center.longitude,object.center.latitude,zoomLevel); 
+                                        return;
+                                    }
+                                });
+                        }
+            }        
+
+
+        
+    </script>
+</body>
+</html>
